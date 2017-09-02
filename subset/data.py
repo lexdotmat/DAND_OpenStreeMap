@@ -178,15 +178,18 @@ PROBLEMCHARS = re.compile (r'[=\+/&<>;\'"\?%#$@\,\. \t\r\n]')
 SCHEMA = schema.schema
 
 # Make sure the fields order in the csvs matches the column order in the sql table schema
-NODE_FIELDS = [ 'id', 'lat', 'lon', 'user', 'uid', 'version', 'changeset', 'timestamp' ]
+NODE_FIELDS      = [ 'id', 'lat', 'lon', 'user', 'uid', 'version', 'changeset', 'timestamp' ]
 NODE_TAGS_FIELDS = [ 'id', 'key', 'value', 'type' ]
-WAY_FIELDS = [ 'id', 'user', 'uid', 'version', 'changeset', 'timestamp' ]
-WAY_TAGS_FIELDS = [ 'id', 'key', 'value', 'type' ]
+WAY_FIELDS       = [ 'id', 'user', 'uid', 'version', 'changeset', 'timestamp' ]
+WAY_TAGS_FIELDS  = [ 'id', 'key', 'value', 'type' ]
 WAY_NODES_FIELDS = [ 'id', 'node_id', 'position' ]
 
 
-def shape_element (element, node_attr_fields=NODE_FIELDS, way_attr_fields=WAY_FIELDS,
-                   problem_chars=PROBLEMCHARS, default_tag_type='regular'):
+def shape_element (element,
+                   node_attr_fields = NODE_FIELDS,
+                   way_attr_fields  = WAY_FIELDS,
+                   problem_chars    = PROBLEMCHARS,
+                   default_tag_type = 'regular'):
     """Clean and shape node or way XML element to Python dict"""
 
     node_attribs = {}
@@ -232,14 +235,14 @@ def shape_element (element, node_attr_fields=NODE_FIELDS, way_attr_fields=WAY_FI
             if i in WAY_FIELDS:
                 way_attribs[ i ] = element.attrib[ i ]
         for sub_lvl in element:
-            way_tagslvl2 = {}  # Secondary tag for tags
+            way_tagslvl2  = {}  # Secondary tag for tags
             way_nodeslvl2 = {}  # Secondary tag for nodes
 
             if sub_lvl.tag == 'nd':
                 way_nodeslvl2[ 'id' ]       = element.attrib[ 'id' ]
                 way_nodeslvl2[ 'node_id' ]  = sub_lvl.attrib[ 'ref' ]
                 way_nodeslvl2[ 'position' ] = position
-                position += 1
+                position                   += 1
                 way_nodes.append (way_nodeslvl2)
 
             elif sub_lvl.tag == 'tag':
@@ -301,7 +304,7 @@ class UnicodeDictWriter (csv.DictWriter, object):
 def process_map (file_in, validate):
     """Iteratively process each XML element and write to csv(s)"""
 
-    with codecs.open (NODES_PATH, 'w')     as nodes_file, \
+    with codecs.open (NODES_PATH, 'w')        as nodes_file, \
             codecs.open (NODE_TAGS_PATH, 'w') as nodes_tags_file, \
             codecs.open (WAYS_PATH, 'w')      as ways_file, \
             codecs.open (WAY_NODES_PATH, 'w') as way_nodes_file, \
