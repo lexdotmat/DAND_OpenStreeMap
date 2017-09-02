@@ -1,20 +1,25 @@
+A text file containing a link to the map position you wrangled in your project,
+a short description of the area and a reason for your choice.
+
 Area Chosen :
 
-Basel
+Basel and surrounding area. A zone with data from Switzerland, France and Germany.
 
 from :
 
 ---- OpenStreeMap ----
+
 Export details
 Tool: http://www.openstreetmap.org/export#map=5/42.618/-7.559
+
 API: http://overpass-api.de/query_form.html
-Query (node(minimum_latitude, minimum_longitude, maximum_latitude, maximum_longitude);<;);out meta;
+Query format:  (node(minimum_latitude, minimum_longitude, maximum_latitude, maximum_longitude);<;);out meta;
+Query used: (node(47.5272,7.5421,47.5996,7.6373);<;);out meta
 
-(node(47.5272,7.5421,47.5996,7.6373);<;);out meta
-
-lat - lon
+Longitude
 47.5272
 47.5996
 
+Latitude
 7.5421
 7.6373
