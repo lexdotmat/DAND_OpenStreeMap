@@ -12,6 +12,7 @@ Query (node(minimum_latitude, minimum_longitude, maximum_latitude, maximum_longi
 
 (node(47.5272,7.5421,47.5996,7.6373);<;);out meta
 
+lat - lon
 47.5272
 47.5996
 
