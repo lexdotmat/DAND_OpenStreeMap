@@ -14,7 +14,10 @@ Tool: http://www.openstreetmap.org/export#map=5/42.618/-7.559
 
 API: http://overpass-api.de/query_form.html
 Query format:  (node(minimum_latitude, minimum_longitude, maximum_latitude, maximum_longitude);<;);out meta;
-Query used: (node(47.5272,7.5421,47.5996,7.6373);<;);out meta
+Query used: (node(47.5272,7.5421,47.5996,7.6373);<;);out meta;
+
+
+Test: (node(47.56374,7.59039,47.55896,7.60229);<;);out meta
 
 Longitude
 47.5272
