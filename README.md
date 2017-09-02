@@ -1,9 +1,10 @@
-# DAND_OpenStreeMap
+# Readme : DAND OpenStreeMap wrangling
 
-## Submission details
+## Project content and details
 
 ### PDF documents
-A pdf document containing your answers to the rubric questions. This file should document your data wrangling process.
+A pdf document containing your answers to the rubric questions. 
+This file should document your data wrangling process. Based on the Jupyter Notebook (see code in project root)
 
 ### Python code
 Your Python code you used in auditing and cleaning your dataset for the final project.
