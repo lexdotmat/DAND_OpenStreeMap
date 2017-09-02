@@ -2,5 +2,18 @@ Area Chosen :
 
 Basel
 
-----
-OpenStreeMap:
+from :
+
+---- OpenStreeMap ----
+Export details
+Tool: http://www.openstreetmap.org/export#map=5/42.618/-7.559
+API: http://overpass-api.de/query_form.html
+Query (node(minimum_latitude, minimum_longitude, maximum_latitude, maximum_longitude);<;);out meta;
+
+(node(47.5272,7.5421,47.5996,7.6373);<;);out meta
+
+47.5272
+47.5996
+
+7.5421
+7.6373
