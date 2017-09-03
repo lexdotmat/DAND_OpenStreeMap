@@ -3,7 +3,7 @@
 # https://docs.python.org/2/library/sqlite3.html
 
 import sqlite3
-
+import pandas
 # c = conn.cursor()
 
 schema = {
@@ -69,6 +69,8 @@ def create_connection(db_file):
     """
     try:
         conn = sqlite3.connect(db_file)
+        # https://stackoverflow.com/questions/3425320/sqlite3-programmingerror-you-must-not-use-8-bit-bytestrings-unless-you-use-a-te
+        conn.text_factory = str
         return conn
     except Error as e:
         print(e)
@@ -87,11 +89,24 @@ def create_table(conn, create_table_sql):
     except Error as e:
         print(e)
 
+def import_csv(conn, table_name, csvfile):
+    """ import a csv
+    :param conn: Connection object
+    :param create_table_sql: a CREATE TABLE statement
+    :return:
+    """
+    df = pandas.read_csv (csvfile)
+    df.to_sql (table_name, conn, if_exists='append', index=False)
+
 
 def main ():
     database = "OSM_Basel_PART.db"
 
-    sql_create_node_table = """CREATE TABLE IF NOT EXISTS node (
+    """ creation of the strings to create the db
+        Improvement: could be created from the schema.py file
+        """
+    # Node Table
+    sql_create_node_table = """CREATE TABLE IF NOT EXISTS nodes (
                                     id integer ,
                                     lat float NOT NULL,
                                     lon float NOT NULL,
@@ -101,20 +116,64 @@ def main ():
                                     changeset integer NOT NULL,
                                     timestamp text
                                 );"""
-
-    sql_create_node_tags_table = """ CREATE TABLE IF NOT EXISTS node_tags (
+    # Node tags Table
+    sql_create_node_tags_table = """ CREATE TABLE IF NOT EXISTS nodes_tags (
                                            id integer,
                                            key text,
                                            value text,
                                            type text
                                        ); """
+
+    # Way Table
+    sql_create_way_table = """ CREATE TABLE IF NOT EXISTS ways (
+                                           id integer,
+                                           user text,
+                                           uid integer,
+                                           version text,
+                                           changeset integer,
+                                           timestamp text
+                                       ); """
+
+    # way nodes Table
+    sql_create_way_nodes_table = """ CREATE TABLE IF NOT EXISTS ways_nodes (
+                                           id integer,
+                                           node_id integer,
+                                           position integer
+                                       ); """
+
+    # way tags Table
+    sql_create_way_tags_table = """ CREATE TABLE IF NOT EXISTS ways_tags (
+                                           id integer,
+                                           key text,
+                                           value text,
+                                           type text
+                                       ); """
+
+
+
     # create a database connection
     conn = create_connection(database)
     if conn is not None:
-        # create projects table
+
+        # create nodes table
         create_table (conn, sql_create_node_table)
-        # create tasks table
+        import_csv (conn, "nodes", "nodes.csv")
+
+        # create tags table
         create_table (conn, sql_create_node_tags_table)
+        import_csv(conn, "nodes_tags", "nodes_tags.csv")
+
+        # create ways table
+        create_table (conn, sql_create_way_table)
+        import_csv(conn, "ways", "ways.csv")
+
+        # create ways nodes table
+        create_table (conn, sql_create_way_nodes_table)
+        import_csv(conn, "ways_nodes", "ways_nodes.csv")
+
+        # create way tags table
+        create_table (conn, sql_create_way_tags_table)
+        import_csv(conn, "ways_tags", "ways_tags.csv")
 
     else:
         print("Error! cannot create the database connection.")
