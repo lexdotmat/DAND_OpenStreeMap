@@ -153,6 +153,7 @@ def main ():
 
     # create a database connection
     conn = create_connection(database)
+    c = conn.cursor()
     if conn is not None:
 
         # create nodes table
