@@ -1,9 +1,29 @@
+# Import re : Regular Expression
 import re
 
 osm_file = open("map.osm.xml", "r")
 
-street_type_re = re.compile(r'\S+\.?$', re.IGNORECASE)
+phone_number_format_CH = re.compile(r'\S+\.?$', re.IGNORECASE)
 street_types = defaultdict(int)
+
+# Audit Phone Numbers:
+
+def audit_country:
+    TODO(M): Audit country
+    # tags:
+    # files:
+
+def audit_street_type(Phone_number, Country):
+    # phone number format: +41 or 0 xx xxx xx xx
+    # to finish
+    if Country == "CH":
+        m = phone_number_format_CH.search(Phone_number)
+    if m:
+        street_type = m.group()
+
+        street_types[street_type] += 1
+
+# Audit_Street_type
 
 def audit_street_type(street_types, street_name):
     m = street_type_re.search(street_name)

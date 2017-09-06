@@ -20,6 +20,11 @@ After initially downloading a small sample size of the Charlotte area and runnin
 - data problem #1 
 
 
+html format missing: 
+select * from nodes_tags WHERE key  = 'website';
+
+select * from nodes_tags WHERE key  = 'cuisine';
+
 	```XML
 	<tag k="tiger:name_base" v="Stonewall"/> 
 	<tag k="tiger:name_direction_prefix" v="W"/> 
@@ -44,6 +49,11 @@ This updated all substrings in problematic address strings, such that:
 *“S Tryon St Ste 105”*
 becomes:
 *“South Tryon Street Suite 105”*
+
+All names :
+
+select * from nodes_tags WHERE key  = 'name';
+
 
 ### data problem #2
 Postal code strings posed a different sort of problem, forcing a decision to strip all leading and trailing characters before and after the main 5­digit zip code. This effectively dropped all leading state characters (as in “NC28226”) and 4­digit zip code extensions following a hyphen (“28226­0783”). This 5­digit restriction allows for more consistent queries.
@@ -76,6 +86,11 @@ value|count
 28209|104
 28207|86
 ```
+Ideas for the analysis: 
+
+Maximum number of house per street  Adress number for example.
+
+Minimum / Average / total. 
 
  These results were taken before accounting for Tiger GPS zip codes residing in second­ level “k” tags. Considering the relatively few documents that included postal codes, of those, it appears that out of the top ten, seven aren’t even in Charlotte, as marked by a “#”. That struck me as surprisingly high to be a blatant error, and found that the number one postal code and all others starting with“297”lie in Rock Hill, SC. So, I performed another aggregation to verify a certain suspicion...
 # Sort cities by count, descending
@@ -218,6 +233,10 @@ LIMIT 1;
 `xxxxxx   xxxxx`
 
 ### Most popular cuisines
+
+select value, count(value) 
+from nodes_tags WHERE key  = 'cuisine'
+group by value order by count(value) desc;
 
 ```sql
 sqlite> SELECT nodes_tags.value, COUNT(*) as num
