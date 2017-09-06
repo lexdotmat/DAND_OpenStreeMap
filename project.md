@@ -234,9 +234,21 @@ LIMIT 1;
 
 ### Most popular cuisines
 
+```sql
 select value, count(value) 
 from nodes_tags WHERE key  = 'cuisine'
 group by value order by count(value) desc;
+```
+
+### Most Popular Shop type
+
+```sql
+select value, count(value) 
+from nodes_tags where key = "shop" 
+group by value 
+order by count(value) desc
+limit 15;
+```
 
 ```sql
 sqlite> SELECT nodes_tags.value, COUNT(*) as num
