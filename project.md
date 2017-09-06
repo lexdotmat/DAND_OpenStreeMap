@@ -71,7 +71,13 @@ GROUP BY tags.value
 ORDER BY count DESC;
 ```
 
+select value, count(value) 
+from nodes_tags where key = "postcode" 
+group by value order by count(value) desc limit 5;
+
+
 Here are the top ten results, beginning with the highest count:
+
 
 ```sql
 value|count

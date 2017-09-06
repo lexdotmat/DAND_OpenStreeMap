@@ -13,6 +13,10 @@ def audit_country:
     # tags:
     # files:
 
+def phone_cleaning(phone_raw):
+    phone_raw.replace(" ", "")
+    return "+41"+ " " +phone_raw[-9:-7] + " " + phone_raw[-7:-4] + " " + phone_raw[-4:-2] + " " + phone_raw[-2:]
+
 def audit_street_type(Phone_number, Country):
     # phone number format: +41 or 0 xx xxx xx xx
     # to finish
