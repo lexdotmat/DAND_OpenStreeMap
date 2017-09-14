@@ -163,6 +163,7 @@ import xml.etree.cElementTree as ET
 import cerberus
 
 import schema
+from string import maketrans
 
 OSM_PATH = "datasubset.osm"
 
@@ -184,6 +185,60 @@ WAY_FIELDS       = [ 'id', 'user', 'uid', 'version', 'changeset', 'timestamp' ]
 WAY_TAGS_FIELDS  = [ 'id', 'key', 'value', 'type' ]
 WAY_NODES_FIELDS = [ 'id', 'node_id', 'position' ]
 
+
+# ================================================== #
+#             Cleaning Functions                     #
+# ================================================== #
+phone_format = {}
+# Audit Phone Numbers:
+
+
+def phone_cleaning(phone_raw):
+    '''
+    :param phone_raw: a swiss phone number raw number in either format.
+    :return: the phone number in the format +41 xx xxx xx xx
+    '''
+    temp = phone_raw
+    temp = temp.replace(" ", "")
+    temp = temp.replace ("/", "")
+    temp = temp.replace ("(", "")
+    temp = temp.replace (")", "")
+    return "+41"+ " " +temp[-9:-7] + " " + temp[-7:-4] + " " + temp[-4:-2] + " " + temp[-2:]
+
+# mapping from https://www.tutorialspoint.com/python/string_maketrans.htm
+# https://stackoverflow.com/questions/30141233/replacing-the-integers-in-a-string-with-xs-without-error-handling
+
+mapping = maketrans("0123456789", "x"*10)
+
+phone_format = {}
+def audit_phone_type(Phone_number):
+
+    # phone number format: +41 or 0 xx xxx xx xx
+    # to finish
+
+    formatphone = Phone_number.translate(mapping)
+    if formatphone not in phone_format:
+        phone_format[formatphone] = 1
+    else:
+        phone_format[formatphone] += 1
+
+    print phone_format
+    return phone_cleaning(Phone_number)
+
+
+# Audit_Street_type
+
+def audit_street_type(street_types, street_name):
+    m = street_type_re.search(street_name)
+    if m:
+        street_type = m.group()
+
+        street_types[street_type] += 1
+
+
+# ================================================== #
+#               Import Functions                     #
+# ================================================== #
 
 def shape_element (element,
                    node_attr_fields = NODE_FIELDS,
@@ -218,13 +273,19 @@ def shape_element (element,
                 if LOWER_COLON.search (lvl2.attrib[ 'k' ]):
                     node_tagslvl2[ 'id' ]    = element.attrib[ 'id' ]
                     node_tagslvl2[ 'key' ]   = lvl2.attrib[ 'k' ].split (':', 1)[ 1 ]
-                    node_tagslvl2[ 'value' ] = lvl2.attrib[ 'v' ]
+                    if node_tagslvl2[ 'key' ] == "phone":
+                        node_tagslvl2[ 'value' ] = audit_phone_type (lvl2.attrib[ 'v' ])
+                    else:
+                        node_tagslvl2[ 'value' ] = lvl2.attrib[ 'v' ]
                     node_tagslvl2[ 'type' ]  = lvl2.attrib[ 'k' ].split (':', 1)[ 0 ]
                     tags.append (node_tagslvl2)
                 else:
                     node_tagslvl2[ 'id' ]    = element.attrib[ 'id' ]
                     node_tagslvl2[ 'key' ]   = lvl2.attrib[ 'k' ]
-                    node_tagslvl2[ 'value' ] = lvl2.attrib[ 'v' ]
+                    if node_tagslvl2[ 'key' ] == "phone":
+                        node_tagslvl2[ 'value' ] = audit_phone_type(lvl2.attrib[ 'v' ])
+                    else :
+                        node_tagslvl2[ 'value' ] = lvl2.attrib[ 'v' ]
                     node_tagslvl2[ 'type' ]  = default_tag_type
                     tags.append (node_tagslvl2)
         return {'node': node_attribs, 'node_tags': tags}
@@ -251,12 +312,18 @@ def shape_element (element,
                         way_tagslvl2[ 'id' ]    = element.attrib[ 'id' ]
                         way_tagslvl2[ 'key' ]   = sub_lvl.attrib[ 'k' ].split (':', 1)[ 1 ]
                         way_tagslvl2[ 'type' ]  = sub_lvl.attrib[ 'k' ].split (':', 1)[ 0 ]
-                        way_tagslvl2[ 'value' ] = sub_lvl.attrib[ 'v' ]
+                        if node_tagslvl2[ 'key' ] == "phone":
+                            node_tagslvl2[ 'value' ] = audit_phone_type (lvl2.attrib[ 'v' ])
+                        else:
+                            node_tagslvl2[ 'value' ] = lvl2.attrib[ 'v' ]
                     else:
                         way_tagslvl2[ 'id' ]    = element.attrib[ 'id' ]
                         way_tagslvl2[ 'key' ]   = sub_lvl.attrib[ 'k' ]
                         way_tagslvl2[ 'type' ]  = default_tag_type
-                        way_tagslvl2[ 'value' ] = sub_lvl.attrib[ 'v' ]
+                        if node_tagslvl2[ 'key' ] == "phone":
+                            node_tagslvl2[ 'value' ] = audit_phone_type (lvl2.attrib[ 'v' ])
+                        else:
+                            node_tagslvl2[ 'value' ] = lvl2.attrib[ 'v' ]
                     tags.append (way_tagslvl2)
         return {'way': way_attribs, 'way_nodes': way_nodes, 'way_tags': tags}
 

@@ -6,154 +6,106 @@ Basel, Switzerland
 - [https://www.openstreetmap.org/relation/1683619](https://www.openstreetmap.org/relation/1683619)
 
 
-This city is introduciton ..  
-and I’d like an opportunity to contribute to its improvement on OpenStreetMap.org.
+This city is the city where I'm currently living, Basel, I like to use this project as an opportunity to discover the city as well as the OpenStreetMap.org website. 
 
 
 ## Problems Encountered in the Map
-After initially downloading a small sample size of the Charlotte area and running it against a provisional data.py file, I noticed five main problems with the data, which I will discuss in the following order:
+After initially downloading a small sample size of the Basel area and running it against a provisional data.py file, I noticed one main problems with the data, which is the phone number format. 
+
+the following paragraph will describes the auditing and cleaning process applied to this particular field. 
 
 
-- Phone number format
-- data problem #1 
-- data problem #1 
-- data problem #1 
+### phone formatting
 
+The audit of the phone format has been run on a partial file with this function that report in the same time the dictionnary content:
 
-html format missing: 
-select * from nodes_tags WHERE key  = 'website';
+```python
+phone_format = {}
+def audit_phone_type(Phone_number):
 
-select * from nodes_tags WHERE key  = 'cuisine';
+    # phone number format: +41 or 0 xx xxx xx xx
+    # to finish
 
-	```XML
-	<tag k="tiger:name_base" v="Stonewall"/> 
-	<tag k="tiger:name_direction_prefix" v="W"/> 
-	<tag k="tiger:name_type" v="St"/>
-	```
+    formatphone = Phone_number.translate(mapping)
+    if formatphone not in phone_format:
+        phone_format[formatphone] = 1
+    else:
+        phone_format[formatphone] += 1
 
-### data problem #1
-Once the data was imported to SQL, some basic querying revealed street name abbreviations and postal code inconsistencies. To deal with correcting street names, I opted not use regular expressions, and instead iterated over each word in an address, correcting them to their respective mappings in audit.py using the following function:
+    print phone_format
+    return phone_cleaning(Phone_number)
+ ```  
+
+Here are the results for the phone format: 
+ 
+```python
+{'+xx xx xxxxxxx': 2,
+ 'xxx xxx xx xx/xx': 1,
+ 'xxx xxx xx xx': 1,
+ '+xx(x)xxxxxxxxx': 1,
+ '+xx xx xxx xx xx': 7,
+ '+xx xx xxx xxxx': 1,
+ '+xxxxxxxxxxx': 1,
+ '+xxxxxxx xx xx': 1,
+ 'xxxxxxxxxx': 1}
+```
+We can see that the Swiss format (+xx xx xxx xx xx ) is the most used (7 occurrences found) and that needs to be harmonized.
+
+In order to clean the phone number, the following function is used: 
 
 ```python 
-def update(name, mapping): 
-	words = name.split()
-	for w in range(len(words)):
-		if words[w] in mapping:
-			if words[w­1].lower() not in ['suite', 'ste.', 'ste']: 
-				# For example, don't update 'Suite E' to 'Suite East'
-				words[w] = mapping[words[w]] name = " ".join(words)
-	return name
+def phone_cleaning(phone_raw):
+    '''
+    :param phone_raw: a swiss phone number raw number in either format.
+    :return: the phone number in the format +41 xx xxx xx xx
+    '''
+    phone_raw.replace(" ", "")
+    return "+41"+ " " +phone_raw[-9:-7] + " " + phone_raw[-7:-4] + " " + phone_raw[-4:-2] + " " + phone_raw[-2:]
 ```
 
-This updated all substrings in problematic address strings, such that:
-*“S Tryon St Ste 105”*
-becomes:
-*“South Tryon Street Suite 105”*
-
-All names :
-
-select * from nodes_tags WHERE key  = 'name';
-
-
-### data problem #2
-Postal code strings posed a different sort of problem, forcing a decision to strip all leading and trailing characters before and after the main 5­digit zip code. This effectively dropped all leading state characters (as in “NC28226”) and 4­digit zip code extensions following a hyphen (“28226­0783”). This 5­digit restriction allows for more consistent queries.
-
-
-Regardless, after standardizing inconsistent postal codes, some altogether “incorrect” (or perhaps misplaced?) postal codes surfaced when grouped together with this aggregator:
+once the format used, the following SQL query is used to consult the content of the db:
+```sql
+select * from nodes_tags where key = "phone";
+```
 
 ```sql
-SELECT tags.value, COUNT(*) as count 
-FROM (SELECT * FROM nodes_tags 
-	  UNION ALL 
-      SELECT * FROM ways_tags) tags
-WHERE tags.key='postcode'
-GROUP BY tags.value
-ORDER BY count DESC;
+364938305|phone|+41 61 272 11 52|regular
+364939823|phone|+41 61 2713933|regular
+366084122|phone|+41 61 560 85 85|contact
+366084122|phone|+41 61 560 8585|regular
+569316805|phone|+41 61 2758000|regular
+569316914|phone|+41 61 205 85 50|contact
+606129885|phone|+41 61 361 73 09|regular
+1145999573|phone|+41 848 888 888|contact
+1197413430|phone|+4161361 02 12|regular
+1255857521|phone|061 363 00 00|regular
 ```
-
-select value, count(value) 
-from nodes_tags where key = "postcode" 
-group by value order by count(value) desc limit 10;
-
-
-    select value, count(value) 
-    from nodes_tags where key = "shop" 
-    group by value order by count(value) desc limit 5;
-
-Here are the top ten results, beginning with the highest count:
-
-
+The query after the cleaning, note that only the 'regular' tags have been corrected due to the audit of only this type of tags.
 ```sql
-value|count
-4054|2773
-4052|2481
-4053|2153
-4051|1485
-4059|1306
-4127|639
-4056|320
-4055|245
-4058|69
-4057|46
-```
-Ideas for the analysis: 
-
-Maximum number of house per street  Adress number for example.
-
-Minimum / Average / total. 
-
- These results were taken before accounting for Tiger GPS zip codes residing in second­ level “k” tags. Considering the relatively few documents that included postal codes, of those, it appears that out of the top ten, seven aren’t even in Charlotte, as marked by a “#”. That struck me as surprisingly high to be a blatant error, and found that the number one postal code and all others starting with“297”lie in Rock Hill, SC. So, I performed another aggregation to verify a certain suspicion...
-# Sort cities by count, descending
-
-```sql
-sqlite> SELECT tags.value, COUNT(*) as count 
-FROM (SELECT * FROM nodes_tags UNION ALL 
-      SELECT * FROM ways_tags) tags
-WHERE tags.key LIKE '%city'
-GROUP BY tags.value
-ORDER BY count DESC LIMIT 5;
+364938305|phone|+41 61 272 11 52|regular
+364939823|phone|+41 61 271 39 33|regular
+366084122|phone|+41 61 560 85 85|contact
+366084122|phone|+41 61 560 85 85|regular
+569316805|phone|+41 61 275 80 00|regular
+569316914|phone|+41 61 205 85 50|contact
+606129885|phone|+41 61 361 73 09|regular
+1145999573|phone|+41 848 888 888|contact
 ```
 
-And, the results, edited for readability:
-
-```sql
-Basel|12038
-Birsfelden|654
-Riehen|89
-Binningen|48
-Muttenz|35
-```
-
-These results confirmed my suspicion that this metro extract would perhaps be more aptly named “Metrolina” or the “Charlotte Metropolitan Area” for its inclusion of surrounding cities in the sprawl. More importantly, three documents need to have their trailing state abbreviations stripped. So, these postal codes aren’t “incorrect,” but simply unexpected. However, one final case proved otherwise.
-A single zip code stood out as clearly erroneous. Somehow, a “48009” got into the dataset. Let’s display part of its document for closer inspection (for our purposes, only the “address” and “pos” fields are relevant):
-
-```sql
-sqlite> SELECT *
-FROM nodes 
-WHERE id IN (SELECT DISTINCT(id) FROM nodes_tags WHERE key='postcode' AND value='48009')
-```
-`1234706337|35.2134608|-80.8270161|movercash|433196|1|7784874|2011-04-06T13:16:06Z`
-
-`sqlite> SELECT * FROM nodes_tags WHERE id=1234706337 and type='addr';`
-
-```sql
-xxxxxxx
-```
-
- It turns out, *“xxxxxx”* is in xxxxx, xxxxx. All data in this document, including those not shown here, are internally consistent and verifiable, except for the latitude and longitude. These coordinates are indeed in Charlotte, NC. I’m not sure about the source of the error, but we can guess it was most likely sitting in front of a computer before this data entered the map. The document can be removed from the database easily enough.
+Note that the Data.py file has been updated with the auditing and cleaning code (without print function, in order to make the process faster)
 
 # Data Overview and Additional Ideas
 This section contains basic statistics about the dataset, the MongoDB queries used to gather them, and some additional ideas about the data in context.
 
 ### File sizes
 ```
-charlotte.osm ......... 294 MB
-charlotte.db .......... 129 MB
-nodes.csv ............. 144 MB
-nodes_tags.csv ........ 0.64 MB
-ways.csv .............. 4.7 MB
-ways_tags.csv ......... 20 MB
-ways_nodes.cv ......... 35 MB  
+basel.osm ......... 60.6 MB
+OS_Basel_FULL.db .......... 32.6 MB
+nodes.csv ............. 18.8 MB
+nodes_tags.csv ........ 3.1 MB
+ways.csv .............. 2 MB
+ways_tags.csv ......... 3.4 MB
+ways_nodes.cv ......... 7.6 MB  
 ```  
 
 ### Number of nodes
@@ -219,11 +171,10 @@ FROM
 ## Contributor statistics and gamification suggestion 
 The contributions of users seems incredibly skewed, possibly due to automated versus manual map editing (the word “bot” appears in some usernames). Here are some user percentage statistics:
 
-- Top user contribution percentage (“xxxxxx”) 52.92%
-- Combined top 2 users' contribution (“xxxxx” and “xxxxxx”) 83.87%
-- Combined Top 10 users contribution
-94.3%
-- Combined number of users making up only 1% of posts 287 (about 85% of all users)
+This is confirmed by the OSM WIKI on the Basel Area. Among the top ten users, 
+- Top user contribution percentage (“stibe”) 48%
+- Combined top 2 users' contribution (“Stibe” and “carrazu”) 73%
+
 
 Thinking about these user percentages, I’m reminded of “gamification” as a motivating force for contribution. In the context of the OpenStreetMap, if user data were more prominently displayed, perhaps others would take an initiative in submitting more edits to the map. And, if everyone sees that only a handful of power users are creating more than 90% a of given map, that might spur the creation of more efficient bots, especially if certain gamification elements were present, such as rewards, badges, or a leaderboard. 
 
@@ -253,7 +204,7 @@ toilets|52
 atm|50
 ```
 
-### Biggest religion (no surprise here)
+### Biggest religion 
 
 ```sql
 sqlite> SELECT nodes_tags.value, COUNT(*) as num
@@ -270,8 +221,6 @@ christian|8
 ```
 
 ### Most popular cuisines
-
-
 
 ```sql
 select value, count(value) 
@@ -320,23 +269,8 @@ toys|6
 jewelry|5
 ```
 
-```sql
-sqlite> SELECT nodes_tags.value, COUNT(*) as num
-FROM nodes_tags 
-    JOIN (SELECT DISTINCT(id) FROM nodes_tags WHERE value='restaurant') i
-    ON nodes_tags.id=i.id
-WHERE nodes_tags.key='cuisine'
-GROUP BY nodes_tags.value
-ORDER BY num DESC;
-```
-
-```sql
-xxxxxx
-       xxxxxx         
-x
-```
-
 # Conclusion
- After this review of the data it’s obvious that the xxxxxx area is incomplete, though I believe it has been well cleaned for the purposes of this exercise. 
+
+After this review of the data it’s obvious that the Basel area is incomplete, though I believe it has been already very well cleaned and seems to be connected with the local Geo data from the official Basel city organization (http://www.stadtplan.bs.ch/geoviewer/)
  
- It interests me to notice a fair amount of GPS data makes it into OpenStreetMap.org on account of users’ efforts, whether by scripting a map editing bot or otherwise. With a rough GPS data processor in place and working together with a more robust data processor similar to data.pyI think it would be possible to input a great amount of cleaned data to OpenStreetMap.org.
+It interests me to notice a fair amount of GPS data makes it into OpenStreetMap.org on account of users’ efforts, whether by scripting a map editing bot or otherwise. With a rough GPS data processor in place and working together with a more robust data processor similar to data.pyI think it would be possible to input a great amount of cleaned data to OpenStreetMap.org.
