@@ -163,6 +163,7 @@ import xml.etree.cElementTree as ET
 import cerberus
 
 import schema
+from string import maketrans
 
 OSM_PATH = "basel.osm"
 
@@ -172,171 +173,239 @@ WAYS_PATH = "ways.csv"
 WAY_NODES_PATH = "ways_nodes.csv"
 WAY_TAGS_PATH = "ways_tags.csv"
 
-LOWER_COLON = re.compile(r'^([a-z]|_)+:([a-z]|_)+')
-PROBLEMCHARS = re.compile(r'[=\+/&<>;\'"\?%#$@\,\. \t\r\n]')
+LOWER_COLON = re.compile (r'^([a-z]|_)+:([a-z]|_)+')
+PROBLEMCHARS = re.compile (r'[=\+/&<>;\'"\?%#$@\,\. \t\r\n]')
 
 SCHEMA = schema.schema
 
 # Make sure the fields order in the csvs matches the column order in the sql table schema
-NODE_FIELDS = ['id', 'lat', 'lon', 'user', 'uid', 'version', 'changeset', 'timestamp']
-NODE_TAGS_FIELDS = ['id', 'key', 'value', 'type']
-WAY_FIELDS = ['id', 'user', 'uid', 'version', 'changeset', 'timestamp']
-WAY_TAGS_FIELDS = ['id', 'key', 'value', 'type']
-WAY_NODES_FIELDS = ['id', 'node_id', 'position']
+NODE_FIELDS      = [ 'id', 'lat', 'lon', 'user', 'uid', 'version', 'changeset', 'timestamp' ]
+NODE_TAGS_FIELDS = [ 'id', 'key', 'value', 'type' ]
+WAY_FIELDS       = [ 'id', 'user', 'uid', 'version', 'changeset', 'timestamp' ]
+WAY_TAGS_FIELDS  = [ 'id', 'key', 'value', 'type' ]
+WAY_NODES_FIELDS = [ 'id', 'node_id', 'position' ]
 
-def shape_element(element, node_attr_fields=NODE_FIELDS, way_attr_fields=WAY_FIELDS,
-                  problem_chars=PROBLEMCHARS, default_tag_type='regular'):
+
+# ================================================== #
+#             Cleaning Functions                     #
+# ================================================== #
+phone_format = {}
+# Audit Phone Numbers:
+
+
+def phone_cleaning(phone_raw):
+    '''
+    :param phone_raw: a swiss phone number raw number in either format.
+    :return: the phone number in the format +41 xx xxx xx xx
+    '''
+    temp = phone_raw
+    temp = temp.replace(" ", "")
+    temp = temp.replace ("/", "")
+    temp = temp.replace ("(", "")
+    temp = temp.replace (")", "")
+    return "+41"+ " " +temp[-9:-7] + " " + temp[-7:-4] + " " + temp[-4:-2] + " " + temp[-2:]
+
+# mapping from https://www.tutorialspoint.com/python/string_maketrans.htm
+# https://stackoverflow.com/questions/30141233/replacing-the-integers-in-a-string-with-xs-without-error-handling
+
+mapping = maketrans("0123456789", "x"*10)
+
+phone_format = {}
+def audit_phone_type(Phone_number):
+
+    # phone number format: +41 or 0 xx xxx xx xx
+    # to finish
+
+    formatphone = Phone_number.translate(mapping)
+    if formatphone not in phone_format:
+        phone_format[formatphone] = 1
+    else:
+        phone_format[formatphone] += 1
+
+    return phone_cleaning(Phone_number)
+
+
+# Audit_Street_type
+
+def audit_street_type(street_types, street_name):
+    m = street_type_re.search(street_name)
+    if m:
+        street_type = m.group()
+
+        street_types[street_type] += 1
+
+
+# ================================================== #
+#               Import Functions                     #
+# ================================================== #
+
+def shape_element (element,
+                   node_attr_fields = NODE_FIELDS,
+                   way_attr_fields  = WAY_FIELDS,
+                   problem_chars    = PROBLEMCHARS,
+                   default_tag_type = 'regular'):
     """Clean and shape node or way XML element to Python dict"""
 
     node_attribs = {}
     way_attribs = {}
-    way_nodes = []
-    tags = []  # Handle secondary tags the same way for both node and way elements
-    
-    
+    way_nodes = [ ]
+    tags = [ ]  # Handle secondary tags the same way for both node and way elements
+
     position = 0
 
     # NODE CODE
     if element.tag == 'node':
         for attributes in element.attrib:
             if attributes in NODE_FIELDS:
-                node_attribs['id']        = element.attrib['id']
-                node_attribs['user']      = element.attrib['user']
-                node_attribs['uid']       = element.attrib['uid']
-                node_attribs['version']   = element.attrib['version']
-                node_attribs['lat']       = element.attrib['lat']
-                node_attribs['lon']       = element.attrib['lon']
-                node_attribs['timestamp'] = element.attrib['timestamp']
-                node_attribs['changeset'] = element.attrib['changeset']
-        
-        for lvl2 in element.iter("tag"):
-            node_tagslvl2 = {} #
-            if not problem_chars.search(lvl2.attrib['k']):
-                if LOWER_COLON.search(lvl2.attrib['k']):
-                    node_tagslvl2['id']    = element.attrib['id']
-                    node_tagslvl2['key']   = lvl2.attrib['k'].split(':',1)[1]
-                    node_tagslvl2['value'] = lvl2.attrib['v']
-                    node_tagslvl2['type']  = lvl2.attrib['k'].split(':',1)[0]
-                    tags.append(node_tagslvl2) 
+                node_attribs[ 'id' ]        = element.attrib[ 'id' ]
+                node_attribs[ 'user' ]      = element.attrib[ 'user' ]
+                node_attribs[ 'uid' ]       = element.attrib[ 'uid' ]
+                node_attribs[ 'version' ]   = element.attrib[ 'version' ]
+                node_attribs[ 'lat' ]       = element.attrib[ 'lat' ]
+                node_attribs[ 'lon' ]       = element.attrib[ 'lon' ]
+                node_attribs[ 'timestamp' ] = element.attrib[ 'timestamp' ]
+                node_attribs[ 'changeset' ] = element.attrib[ 'changeset' ]
+
+        for lvl2 in element.iter ("tag"):
+            node_tagslvl2 = {}  #
+            if not problem_chars.search (lvl2.attrib[ 'k' ]):
+                if LOWER_COLON.search (lvl2.attrib[ 'k' ]):
+                    node_tagslvl2[ 'id' ]    = element.attrib[ 'id' ]
+                    node_tagslvl2[ 'key' ]   = lvl2.attrib[ 'k' ].split (':', 1)[ 1 ]
+                    if node_tagslvl2[ 'key' ] == "phone":
+                        node_tagslvl2[ 'value' ] = phone_cleaning(lvl2.attrib[ 'v' ])
+                    else:
+                        node_tagslvl2[ 'value' ] = lvl2.attrib[ 'v' ]
+                    node_tagslvl2[ 'type' ]  = lvl2.attrib[ 'k' ].split (':', 1)[ 0 ]
+                    tags.append (node_tagslvl2)
                 else:
-                    node_tagslvl2['id']    = element.attrib['id']
-                    node_tagslvl2['key']   = lvl2.attrib['k']
-                    node_tagslvl2['value'] = lvl2.attrib['v']
-                    node_tagslvl2['type']  = default_tag_type
-                    tags.append(node_tagslvl2) 
+                    node_tagslvl2[ 'id' ]    = element.attrib[ 'id' ]
+                    node_tagslvl2[ 'key' ]   = lvl2.attrib[ 'k' ]
+                    if node_tagslvl2[ 'key' ] == "phone":
+                        node_tagslvl2[ 'value' ] = phone_cleaning(lvl2.attrib[ 'v' ])
+                    else :
+                        node_tagslvl2[ 'value' ] = lvl2.attrib[ 'v' ]
+                    node_tagslvl2[ 'type' ]  = default_tag_type
+                    tags.append (node_tagslvl2)
         return {'node': node_attribs, 'node_tags': tags}
-        
+
     # WAY CODE
     elif element.tag == 'way':
         for i in element.attrib:
             if i in WAY_FIELDS:
-                way_attribs[i] = element.attrib[i]
+                way_attribs[ i ] = element.attrib[ i ]
         for sub_lvl in element:
-            way_tagslvl2 = {} #Secondary tag for tags
-            way_nodeslvl2 = {} #Secondary tag for nodes
-    
+            way_tagslvl2  = {}  # Secondary tag for tags
+            way_nodeslvl2 = {}  # Secondary tag for nodes
+
             if sub_lvl.tag == 'nd':
-                way_nodeslvl2['id']       = element.attrib['id']
-                way_nodeslvl2['node_id']  = sub_lvl.attrib['ref']
-                way_nodeslvl2['position'] = position 
-                position += 1
-                way_nodes.append(way_nodeslvl2)
-                
+                way_nodeslvl2[ 'id' ]       = element.attrib[ 'id' ]
+                way_nodeslvl2[ 'node_id' ]  = sub_lvl.attrib[ 'ref' ]
+                way_nodeslvl2[ 'position' ] = position
+                position                   += 1
+                way_nodes.append (way_nodeslvl2)
+
             elif sub_lvl.tag == 'tag':
-                if not problem_chars.search(sub_lvl.attrib['k']):
-                    if LOWER_COLON.search(sub_lvl.attrib['k']):
-                        way_tagslvl2['id']    = element.attrib['id']
-                        way_tagslvl2['key']   = sub_lvl.attrib['k'].split(':',1)[1]
-                        way_tagslvl2['type']  = sub_lvl.attrib['k'].split(':',1)[0]
-                        way_tagslvl2['value'] = sub_lvl.attrib['v']
+                if not problem_chars.search (sub_lvl.attrib[ 'k' ]):
+                    if LOWER_COLON.search (sub_lvl.attrib[ 'k' ]):
+                        way_tagslvl2[ 'id' ]    = element.attrib[ 'id' ]
+                        way_tagslvl2[ 'key' ]   = sub_lvl.attrib[ 'k' ].split (':', 1)[ 1 ]
+                        way_tagslvl2[ 'type' ]  = sub_lvl.attrib[ 'k' ].split (':', 1)[ 0 ]
+                        if way_tagslvl2[ 'key' ] == "phone":
+                            way_tagslvl2[ 'value' ] = phone_cleaning (sub_lvl.attrib[ 'v' ])
+                        else:
+                            way_tagslvl2[ 'value' ] = sub_lvl.attrib[ 'v' ]
                     else:
-                        way_tagslvl2['id']    = element.attrib['id']
-                        way_tagslvl2['key']   = sub_lvl.attrib['k']
-                        way_tagslvl2['type']  = default_tag_type
-                        way_tagslvl2['value'] = sub_lvl.attrib['v']
-                    tags.append(way_tagslvl2)
+                        way_tagslvl2[ 'id' ]    = element.attrib[ 'id' ]
+                        way_tagslvl2[ 'key' ]   = sub_lvl.attrib[ 'k' ]
+                        way_tagslvl2[ 'type' ]  = default_tag_type
+                        if way_tagslvl2[ 'key' ] == "phone":
+                            way_tagslvl2[ 'value' ] = phone_cleaning (sub_lvl.attrib[ 'v' ])
+                        else:
+                            way_tagslvl2[ 'value' ] = sub_lvl.attrib[ 'v' ]
+                    tags.append (way_tagslvl2)
         return {'way': way_attribs, 'way_nodes': way_nodes, 'way_tags': tags}
 
 
 # ================================================== #
 #               Helper Functions                     #
 # ================================================== #
-def get_element(osm_file, tags=('node', 'way', 'relation')):
+def get_element (osm_file, tags=('node', 'way', 'relation')):
     """Yield element if it is the right type of tag"""
 
-    context = ET.iterparse(osm_file, events=('start', 'end'))
-    _, root = next(context)
+    context = ET.iterparse (osm_file, events=('start', 'end'))
+    _, root = next (context)
     for event, elem in context:
         if event == 'end' and elem.tag in tags:
             yield elem
-            root.clear()
+            root.clear ( )
 
 
-def validate_element(element, validator, schema=SCHEMA):
+def validate_element (element, validator, schema=SCHEMA):
     """Raise ValidationError if element does not match schema"""
-    if validator.validate(element, schema) is not True:
-        field, errors = next(validator.errors.iteritems())
+    if validator.validate (element, schema) is not True:
+        field, errors = next (validator.errors.iteritems ( ))
         message_string = "\nElement of type '{0}' has the following errors:\n{1}"
-        error_string = pprint.pformat(errors)
-        
-        raise Exception(message_string.format(field, error_string))
+        error_string = pprint.pformat (errors)
+
+        raise Exception (message_string.format (field, error_string))
 
 
-class UnicodeDictWriter(csv.DictWriter, object):
+class UnicodeDictWriter (csv.DictWriter, object):
     """Extend csv.DictWriter to handle Unicode input"""
 
-    def writerow(self, row):
-        super(UnicodeDictWriter, self).writerow({
-            k: (v.encode('utf-8') if isinstance(v, unicode) else v) for k, v in row.iteritems()
+    def writerow (self, row):
+        super (UnicodeDictWriter, self).writerow ({
+            k: (v.encode ('utf-8') if isinstance (v, unicode) else v) for k, v in row.iteritems ( )
         })
 
-    def writerows(self, rows):
+    def writerows (self, rows):
         for row in rows:
-            self.writerow(row)
+            self.writerow (row)
 
 
 # ================================================== #
 #               Main Function                        #
 # ================================================== #
-def process_map(file_in, validate):
+def process_map (file_in, validate):
     """Iteratively process each XML element and write to csv(s)"""
 
-    with codecs.open(NODES_PATH, 'w')     as nodes_file, \
-         codecs.open(NODE_TAGS_PATH, 'w') as nodes_tags_file, \
-         codecs.open(WAYS_PATH, 'w')      as ways_file, \
-         codecs.open(WAY_NODES_PATH, 'w') as way_nodes_file, \
-         codecs.open(WAY_TAGS_PATH, 'w')  as way_tags_file:
+    with codecs.open (NODES_PATH, 'w')        as nodes_file, \
+            codecs.open (NODE_TAGS_PATH, 'w') as nodes_tags_file, \
+            codecs.open (WAYS_PATH, 'w')      as ways_file, \
+            codecs.open (WAY_NODES_PATH, 'w') as way_nodes_file, \
+            codecs.open (WAY_TAGS_PATH, 'w')  as way_tags_file:
 
-        nodes_writer     = UnicodeDictWriter(nodes_file, NODE_FIELDS)
-        node_tags_writer = UnicodeDictWriter(nodes_tags_file, NODE_TAGS_FIELDS)
-        ways_writer      = UnicodeDictWriter(ways_file, WAY_FIELDS)
-        way_nodes_writer = UnicodeDictWriter(way_nodes_file, WAY_NODES_FIELDS)
-        way_tags_writer  = UnicodeDictWriter(way_tags_file, WAY_TAGS_FIELDS)
+        nodes_writer = UnicodeDictWriter (nodes_file, NODE_FIELDS)
+        node_tags_writer = UnicodeDictWriter (nodes_tags_file, NODE_TAGS_FIELDS)
+        ways_writer = UnicodeDictWriter (ways_file, WAY_FIELDS)
+        way_nodes_writer = UnicodeDictWriter (way_nodes_file, WAY_NODES_FIELDS)
+        way_tags_writer = UnicodeDictWriter (way_tags_file, WAY_TAGS_FIELDS)
 
-        nodes_writer.writeheader()
-        node_tags_writer.writeheader()
-        ways_writer.writeheader()
-        way_nodes_writer.writeheader()
-        way_tags_writer.writeheader()
+        nodes_writer.writeheader ( )
+        node_tags_writer.writeheader ( )
+        ways_writer.writeheader ( )
+        way_nodes_writer.writeheader ( )
+        way_tags_writer.writeheader ( )
 
-        validator = cerberus.Validator()
+        validator = cerberus.Validator ( )
 
-        for element in get_element(file_in, tags=('node', 'way')):
-            el = shape_element(element)
+        for element in get_element (file_in, tags=('node', 'way')):
+            el = shape_element (element)
             if el:
                 if validate is True:
-                    validate_element(el, validator)
+                    validate_element (el, validator)
 
                 if element.tag == 'node':
-                    nodes_writer.writerow(el['node'])
-                    node_tags_writer.writerows(el['node_tags'])
+                    nodes_writer.writerow (el[ 'node' ])
+                    node_tags_writer.writerows (el[ 'node_tags' ])
                 elif element.tag == 'way':
-                    ways_writer.writerow(el['way'])
-                    way_nodes_writer.writerows(el['way_nodes'])
-                    way_tags_writer.writerows(el['way_tags'])
+                    ways_writer.writerow (el[ 'way' ])
+                    way_nodes_writer.writerows (el[ 'way_nodes' ])
+                    way_tags_writer.writerows (el[ 'way_tags' ])
 
 
 if __name__ == '__main__':
     # Note: Validation is ~ 10X slower. For the project consider using a small
     # sample of the map when validating.
-    process_map(OSM_PATH, validate=True)
+    process_map (OSM_PATH, validate=True)
