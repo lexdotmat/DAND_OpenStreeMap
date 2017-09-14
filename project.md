@@ -1,7 +1,7 @@
 # OpenStreetMap Data Case Study
 
 ### Map Area
-xxxx, Switzerland 
+Basel, Switzerland 
 
 - [https://www.openstreetmap.org/relation/1683619](https://www.openstreetmap.org/relation/1683619)
 
@@ -14,7 +14,7 @@ and I’d like an opportunity to contribute to its improvement on OpenStreetMap.
 After initially downloading a small sample size of the Charlotte area and running it against a provisional data.py file, I noticed five main problems with the data, which I will discuss in the following order:
 
 
-- data problem #1 
+- Phone number format
 - data problem #1 
 - data problem #1 
 - data problem #1 
@@ -73,24 +73,28 @@ ORDER BY count DESC;
 
 select value, count(value) 
 from nodes_tags where key = "postcode" 
-group by value order by count(value) desc limit 5;
+group by value order by count(value) desc limit 10;
 
+
+    select value, count(value) 
+    from nodes_tags where key = "shop" 
+    group by value order by count(value) desc limit 5;
 
 Here are the top ten results, beginning with the highest count:
 
 
 ```sql
 value|count
-28205|900
-28208|388
-28206|268
-28202|204
-28204|196
-28216|174
-28211|148
-28203|120
-28209|104
-28207|86
+4054|2773
+4052|2481
+4053|2153
+4051|1485
+4059|1306
+4127|639
+4056|320
+4055|245
+4058|69
+4057|46
 ```
 Ideas for the analysis: 
 
@@ -107,15 +111,17 @@ FROM (SELECT * FROM nodes_tags UNION ALL
       SELECT * FROM ways_tags) tags
 WHERE tags.key LIKE '%city'
 GROUP BY tags.value
-ORDER BY count DESC;
+ORDER BY count DESC LIMIT 5;
 ```
 
 And, the results, edited for readability:
 
 ```sql
-
-xxxxx   xxxxx       
-x       
+Basel|12038
+Birsfelden|654
+Riehen|89
+Binningen|48
+Muttenz|35
 ```
 
 These results confirmed my suspicion that this metro extract would perhaps be more aptly named “Metrolina” or the “Charlotte Metropolitan Area” for its inclusion of surrounding cities in the sprawl. More importantly, three documents need to have their trailing state abbreviations stripped. So, these postal codes aren’t “incorrect,” but simply unexpected. However, one final case proved otherwise.
@@ -154,20 +160,20 @@ ways_nodes.cv ......... 35 MB
 ```
 sqlite> SELECT COUNT(*) FROM nodes;
 ```
-xxx
+235839
 
 ### Number of ways
 ```
 sqlite> SELECT COUNT(*) FROM ways;
 ```
-xxx
+34900
 
 ### Number of unique users
 ```sql
 sqlite> SELECT COUNT(DISTINCT(e.uid))          
 FROM (SELECT uid FROM nodes UNION ALL SELECT uid FROM ways) e;
 ```
-xxxx
+897
 
 ### Top 10 contributing users
 ```sql
@@ -179,10 +185,24 @@ LIMIT 10;
 ```
 
 ```sql
-xxx -  xxxx
-
+stibe|104851
+oscarrazu|56236
+calubi|24973
+Geb_imp|7150
+kaiD|5238
+MischaF|4748
+roki|4447
+Nzara|4325
+mdk|4250
+soemisch|3427
 ```
- 
+
+The Basel Wiki OSM highlight that Stibe is the user who developped the import algorithm in February 2014
+
+http://wiki.openstreetmap.org/wiki/DE:Switzerland:Basel-Stadt
+
+
+
 ### Number of users appearing only once (having 1 post)
 ```sql
 sqlite> SELECT COUNT(*) 
@@ -192,7 +212,7 @@ FROM
      GROUP BY e.user
      HAVING num=1)  u;
 ```
-xxxx
+180
 
 # Additional Ideas
 
@@ -221,7 +241,16 @@ LIMIT 10;
 ```
 
 ```sql
-xxxxx xxxxx
+bench|416
+restaurant|233
+vending_machine|167
+cafe|63
+post_box|63
+parking|58
+recycling|57
+waste_basket|54
+toilets|52
+atm|50
 ```
 
 ### Biggest religion (no surprise here)
@@ -236,14 +265,31 @@ GROUP BY nodes_tags.value
 ORDER BY num DESC
 LIMIT 1;
 ```
-`xxxxxx   xxxxx`
+```sql
+christian|8
+```
 
 ### Most popular cuisines
+
+
 
 ```sql
 select value, count(value) 
 from nodes_tags WHERE key  = 'cuisine'
-group by value order by count(value) desc;
+group by value order by count(value) desc limit 10;
+```
+
+```sql
+italian|20
+regional|19
+pizza|11
+coffee_shop|10
+burger|7
+turkish|6
+kebab|5
+asian|4
+japanese|3
+chinese|2
 ```
 
 ### Most Popular Shop type
@@ -254,6 +300,24 @@ from nodes_tags where key = "shop"
 group by value 
 order by count(value) desc
 limit 15;
+```
+
+```sql
+supermarket|80
+convenience|32
+hairdresser|27
+kiosk|24
+bakery|21
+bicycle|19
+clothes|14
+florist|14
+books|12
+confectionery|8
+hifi|7
+yes|7
+optician|6
+toys|6
+jewelry|5
 ```
 
 ```sql

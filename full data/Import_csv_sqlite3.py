@@ -42,6 +42,7 @@ def create_table(conn, create_table_sql):
     except Error as e:
         print(e)
 
+
 def import_csv(conn, table_name, csvfile):
     """ import a csv
     :param conn: Connection object
@@ -53,7 +54,7 @@ def import_csv(conn, table_name, csvfile):
 
 
 def main ():
-    database = "OSM_Basel_PART.db"
+    database = "OSM_Basel_FULL.db"
 
     """ creation of the strings to create the db
         Improvement: could be created from the schema.py file
