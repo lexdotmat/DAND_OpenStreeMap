@@ -10,12 +10,16 @@ This city is the city where I'm currently living, Basel, I like to use this proj
 
 
 ## Problems Encountered in the Map
+
 After initially downloading a small sample size of the Basel area and running it against a provisional data.py file, I noticed one main problems with the data, which is the phone number format. 
 
-the following paragraph will describes the auditing and cleaning process applied to this particular field. 
+The following paragraph will describes the auditing and cleaning process applied to this particular field. 
 
+Another data quality problem is the country value, in most of the case the 2 digit country code is used, however, in some cases the full name i.e. "Switzerland" is being used.
 
+In order to harmonized this, a function has been designed to take care of the cases where the name is written in full.
 ### phone formatting
+
 
 The audit of the phone format has been run on a partial file with this function that report in the same time the dictionnary content:
 
@@ -93,6 +97,49 @@ The query after the cleaning, note that only the 'regular' tags have been correc
 ```
 
 Note that the Data.py file has been updated with the auditing and cleaning code (without print function, in order to make the process faster)
+## Country codes and names
+
+After looking at the data, I found some very odd cases, the area is in Switzerland and, when querying the keys "country",
+I received the following values:
+
+```sql
+sqlite> select value, count(*) from nodes_tags where key = 'country' group by value;
+```
+
+```sql
+CH|1318
+DE|2
+PH|2
+Switzerland|4
+```
+
+The result was very interesting, especially for the PH, at first, I thougth it was a mistake from CH but I queryied the sql database and found the following:
+
+```sql
+sqlite> select * from nodes_tags where value = 'PH' group by value;
+569316909|country|PH|regular
+```
+
+```sql
+sqlite> select * from nodes_tags where id  = '569316909' group by value;
+569316909|country|PH|regular
+569316909|name|Philippinisches Konsulat|regular
+569316909|amenity|embassy|regular
+```
+
+The country field has been used for a Consulat! 
+
+it was the same for the DE tag:
+```sql
+3849747906|target|CH|regular
+3849747906|country|DE|regular
+3849747906|name|Honorarkonsul der Bundesrepublik Deutschland Basel|regular
+3849747906|amenity|embassy|regular
+3849747906|website|https://www.deutscher-honorarkonsul-basel.ch/|regular
+```
+
+The decision has been taken just to take care about the Switzerland tag. 
+
 
 # Data Overview and Additional Ideas
 This section contains basic statistics about the dataset, the MongoDB queries used to gather them, and some additional ideas about the data in context.
