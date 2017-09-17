@@ -107,10 +107,10 @@ sqlite> select value, count(*) from nodes_tags where key = 'country' group by va
 ```
 
 ```sql
-CH|1318
-DE|2
-PH|2
-Switzerland|4
+CH|659
+DE|1
+PH|1
+Switzerland|2
 ```
 
 The result was very interesting, especially for the PH, at first, I thougth it was a mistake from CH but I queryied the sql database and found the following:
@@ -140,6 +140,45 @@ it was the same for the DE tag:
 
 The decision has been taken just to take care about the Switzerland tag. 
 
+here is the audit function written, the function used the same concept as the street cleaning function defined in the data cleaning lessons.
+
+
+```sql
+# Name cleaning :
+expected = ["CH", "PH", "DE", "FR"]
+
+# UPDATE THIS VARIABLE
+mapping_country = { "Switzerland": "CH",
+            "switzerland": "CH",
+            "Schweiz": "CH",
+            "Suizzera": "CH",
+            "DE;F": "DE"}
+
+def audit_country(elem):
+    """
+    :param elem: expected a country code from OSM
+    :return: if the country code is in expected_codes, return the code unchanged, else, look into the dictionary for a match.
+    the dictionnary needs to be updated manually, for improvement, a string matching algorithm could be used
+    example : match switzerland and switzerlend when a typo is present.
+    """
+    if elem in expected:
+        return elem
+    else:
+        return mapping_country[elem]
+```
+
+After looking at the data, I found some very odd cases, the area is in Switzerland and, when querying the keys "country",
+I received the following values:
+
+```sql
+sqlite> select value, count(*) from nodes_tags where key = 'country' group by value;
+```
+
+```sql
+CH| 661
+DE| 1
+PH| 1
+```
 
 # Data Overview and Additional Ideas
 This section contains basic statistics about the dataset, the MongoDB queries used to gather them, and some additional ideas about the data in context.
@@ -318,6 +357,15 @@ jewelry|5
 
 # Conclusion
 
-After this review of the data it’s obvious that the Basel area is incomplete, though I believe it has been already very well cleaned and seems to be connected with the local Geo data from the official Basel city organization (http://www.stadtplan.bs.ch/geoviewer/)
+After this review of the OSM data from the Basel area, I believe it has been already very well cleaned and seems to be connected with the local Geo data from the official Basel city organization (http://www.stadtplan.bs.ch/geoviewer/)
  
 It interests me to notice a fair amount of GPS data makes it into OpenStreetMap.org on account of users’ efforts, whether by scripting a map editing bot or otherwise. With a rough GPS data processor in place and working together with a more robust data processor similar to data.pyI think it would be possible to input a great amount of cleaned data to OpenStreetMap.org.
+
+Regarding the data cleaning, 2 functions have been defined in this project.
+
+First, for the formatting of the phone numbers, returning the phone number in an appropriate functions. 
+Second, for the usage of the 2 digit country code with a function taking parameters into account so that more names (Names in foreign languages) can be used.
+
+The two functions defined improved the quality of the data programmatically and, having such kind of function incorporated into OSM could be of benefit.
+
+In go further this way, a robust dictionary of the 2 digits code would be needed and it could be made from an ISO standards such as the ISO 3166-1 alpha-2.

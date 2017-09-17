@@ -225,15 +225,30 @@ def audit_phone_type(Phone_number):
     return phone_cleaning(Phone_number)
 
 
-# Audit_Street_type
+# Audit_country_type
 
-def audit_street_type(street_types, street_name):
-    m = street_type_re.search(street_name)
-    if m:
-        street_type = m.group()
+# Name cleaning :
+expected_codes = ["CH", "PH", "DE", "FR"]
 
-        street_types[street_type] += 1
+# UPDATE THIS VARIABLE
+mapping_country = { "Switzerland": "CH",
+            "switzerland": "CH",
+            "Schweiz": "CH",
+            "Suizzera": "CH",
+            "DE;F": "DE"}
 
+def audit_country(elem):
+    """
+    :param elem: expected a country code from OSM
+    :return: if the country code is in expected_codes, return the code unchanged, else, look into the dictionary for a match.
+    the dictionnary needs to be updated manually, for improvement, a string matching algorithm could be used
+    example : match switzerland and switzerlend when a typo is present.
+    """
+
+    if elem in expected_codes:
+        return elem
+    else:
+        return mapping_country[elem]
 
 # ================================================== #
 #               Import Functions                     #
@@ -274,6 +289,8 @@ def shape_element (element,
                     node_tagslvl2[ 'key' ]   = lvl2.attrib[ 'k' ].split (':', 1)[ 1 ]
                     if node_tagslvl2[ 'key' ] == "phone":
                         node_tagslvl2[ 'value' ] = phone_cleaning(lvl2.attrib[ 'v' ])
+                    elif node_tagslvl2[ 'key' ] == "country":
+                        node_tagslvl2[ 'value' ] = audit_country (lvl2.attrib[ 'v' ])
                     else:
                         node_tagslvl2[ 'value' ] = lvl2.attrib[ 'v' ]
                     node_tagslvl2[ 'type' ]  = lvl2.attrib[ 'k' ].split (':', 1)[ 0 ]
@@ -283,6 +300,8 @@ def shape_element (element,
                     node_tagslvl2[ 'key' ]   = lvl2.attrib[ 'k' ]
                     if node_tagslvl2[ 'key' ] == "phone":
                         node_tagslvl2[ 'value' ] = phone_cleaning(lvl2.attrib[ 'v' ])
+                    elif node_tagslvl2[ 'key' ] == "country":
+                        node_tagslvl2[ 'value' ] = audit_country (lvl2.attrib[ 'v' ])
                     else :
                         node_tagslvl2[ 'value' ] = lvl2.attrib[ 'v' ]
                     node_tagslvl2[ 'type' ]  = default_tag_type
@@ -313,6 +332,8 @@ def shape_element (element,
                         way_tagslvl2[ 'type' ]  = sub_lvl.attrib[ 'k' ].split (':', 1)[ 0 ]
                         if way_tagslvl2[ 'key' ] == "phone":
                             way_tagslvl2[ 'value' ] = phone_cleaning (sub_lvl.attrib[ 'v' ])
+                        elif way_tagslvl2[ 'key' ] == "country":
+                            way_tagslvl2[ 'value' ] = audit_country (sub_lvl.attrib[ 'v' ])
                         else:
                             way_tagslvl2[ 'value' ] = sub_lvl.attrib[ 'v' ]
                     else:
@@ -321,6 +342,8 @@ def shape_element (element,
                         way_tagslvl2[ 'type' ]  = default_tag_type
                         if way_tagslvl2[ 'key' ] == "phone":
                             way_tagslvl2[ 'value' ] = phone_cleaning (sub_lvl.attrib[ 'v' ])
+                        elif way_tagslvl2[ 'key' ] == "country":
+                            way_tagslvl2[ 'value' ] = audit_country (sub_lvl.attrib[ 'v' ])
                         else:
                             way_tagslvl2[ 'value' ] = sub_lvl.attrib[ 'v' ]
                     tags.append (way_tagslvl2)

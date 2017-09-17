@@ -435,7 +435,7 @@
   </node>
   <node id="335557527" lat="47.5475300" lon="7.5906700" version="6" timestamp="2016-09-09T19:21:52Z" changeset="42044049" uid="338449" user="chatelao">
     <tag k="addr:city" v="Basel"/>
-    <tag k="addr:country" v="CH"/>
+    <tag k="addr:country" v="Switzerland"/>
     <tag k="addr:postcode" v="4051"/>
     <tag k="amenity" v="car_sharing"/>
     <tag k="capacity" v="14"/>

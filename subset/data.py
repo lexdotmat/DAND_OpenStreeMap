@@ -222,18 +222,27 @@ def audit_phone_type(Phone_number):
     else:
         phone_format[formatphone] += 1
 
-    print phone_format
+    #print phone_format
     return phone_cleaning(Phone_number)
 
 
-# Audit_Street_type
+# Audit_country_type
 
-def audit_street_type(street_types, street_name):
-    m = street_type_re.search(street_name)
-    if m:
-        street_type = m.group()
+# Name cleaning :
+expected_codes = ["CH", "PH", "DE"]
 
-        street_types[street_type] += 1
+# UPDATE THIS VARIABLE
+mapping_country = { "Switzerland": "CH",
+            "switzerland": "CH",
+            "Schweiz": "CH",
+            "Suizzera": "CH"}
+
+def audit_country(elem):
+    if elem in expected_codes:
+        return elem
+    else:
+        return mapping_country[elem]
+
 
 
 # ================================================== #
@@ -275,6 +284,8 @@ def shape_element (element,
                     node_tagslvl2[ 'key' ]   = lvl2.attrib[ 'k' ].split (':', 1)[ 1 ]
                     if node_tagslvl2[ 'key' ] == "phone":
                         node_tagslvl2[ 'value' ] = audit_phone_type (lvl2.attrib[ 'v' ])
+                    elif node_tagslvl2[ 'key' ] == "country":
+                        node_tagslvl2[ 'value' ] = audit_country(lvl2.attrib[ 'v' ])
                     else:
                         node_tagslvl2[ 'value' ] = lvl2.attrib[ 'v' ]
                     node_tagslvl2[ 'type' ]  = lvl2.attrib[ 'k' ].split (':', 1)[ 0 ]
@@ -312,18 +323,18 @@ def shape_element (element,
                         way_tagslvl2[ 'id' ]    = element.attrib[ 'id' ]
                         way_tagslvl2[ 'key' ]   = sub_lvl.attrib[ 'k' ].split (':', 1)[ 1 ]
                         way_tagslvl2[ 'type' ]  = sub_lvl.attrib[ 'k' ].split (':', 1)[ 0 ]
-                        if node_tagslvl2[ 'key' ] == "phone":
-                            node_tagslvl2[ 'value' ] = audit_phone_type (lvl2.attrib[ 'v' ])
+                        if way_tagslvl2[ 'key' ] == "phone":
+                            way_tagslvl2[ 'value' ] = audit_phone_type (sub_lvl.attrib[ 'v' ])
                         else:
-                            node_tagslvl2[ 'value' ] = lvl2.attrib[ 'v' ]
+                            way_tagslvl2[ 'value' ] = sub_lvl.attrib[ 'v' ]
                     else:
                         way_tagslvl2[ 'id' ]    = element.attrib[ 'id' ]
                         way_tagslvl2[ 'key' ]   = sub_lvl.attrib[ 'k' ]
                         way_tagslvl2[ 'type' ]  = default_tag_type
-                        if node_tagslvl2[ 'key' ] == "phone":
-                            node_tagslvl2[ 'value' ] = audit_phone_type (lvl2.attrib[ 'v' ])
+                        if way_tagslvl2[ 'key' ] == "phone":
+                            way_tagslvl2[ 'value' ] = audit_phone_type (sub_lvl.attrib[ 'v' ])
                         else:
-                            node_tagslvl2[ 'value' ] = lvl2.attrib[ 'v' ]
+                            way_tagslvl2[ 'value' ] = sub_lvl.attrib[ 'v' ]
                     tags.append (way_tagslvl2)
         return {'way': way_attribs, 'way_nodes': way_nodes, 'way_tags': tags}
 
